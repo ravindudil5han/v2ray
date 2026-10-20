@@ -25,12 +25,14 @@ class _PayloadScreenState extends State<PayloadScreen> {
   late final TextEditingController _payloadController;
   late final TextEditingController _bugHostController;
   late final TextEditingController _sniController;
+  String? _lastProfileId;
 
   @override
   void initState() {
     super.initState();
     final p = widget.connectionService.activeProfile?.netModPayload ??
         const NetModPayloadConfig();
+    _lastProfileId = widget.connectionService.activeProfile?.id;
     _enabled = p.enabled;
     _method = p.requestMethod;
     _payloadController = TextEditingController(
@@ -40,6 +42,22 @@ class _PayloadScreenState extends State<PayloadScreen> {
     );
     _bugHostController = TextEditingController(text: p.bugHost);
     _sniController = TextEditingController(text: p.sni);
+  }
+
+  void _checkProfileSync() {
+    final currentId = widget.connectionService.activeProfile?.id;
+    if (currentId != _lastProfileId) {
+      _lastProfileId = currentId;
+      final p = widget.connectionService.activeProfile?.netModPayload ??
+          const NetModPayloadConfig();
+      _enabled = p.enabled;
+      _method = p.requestMethod;
+      _payloadController.text = p.payloadText.isNotEmpty
+          ? p.payloadText
+          : NetModPayloadInjector.defaultConnectPayload;
+      _bugHostController.text = p.bugHost;
+      _sniController.text = p.sni;
+    }
   }
 
   @override
@@ -116,18 +134,22 @@ class _PayloadScreenState extends State<PayloadScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final activeProfile = widget.connectionService.activeProfile;
-    final serverAddress = activeProfile?.address ?? 'example.com';
-    final serverPort = activeProfile?.port ?? 443;
+    return ListenableBuilder(
+      listenable: widget.connectionService,
+      builder: (context, _) {
+        _checkProfileSync();
+        final activeProfile = widget.connectionService.activeProfile;
+        final serverAddress = activeProfile?.address ?? 'example.com';
+        final serverPort = activeProfile?.port ?? 443;
 
-    final formattedPreview = NetModPayloadInjector.formatPayload(
-      rawPayload: _payloadController.text,
-      serverAddress: serverAddress,
-      serverPort: serverPort,
-      bugHost: _bugHostController.text.trim(),
-    );
+        final formattedPreview = NetModPayloadInjector.formatPayload(
+          rawPayload: _payloadController.text,
+          serverAddress: serverAddress,
+          serverPort: serverPort,
+          bugHost: _bugHostController.text.trim(),
+        );
 
-    return Scaffold(
+        return Scaffold(
       appBar: AppBar(
         title: const Text('NetMod Payload Injector'),
         actions: [
@@ -356,6 +378,8 @@ class _PayloadScreenState extends State<PayloadScreen> {
         ],
       ),
     );
+  },
+);
   }
 
   Widget _buildTagChip(String tag) {

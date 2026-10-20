@@ -150,7 +150,10 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: widget.profileService,
+      listenable: Listenable.merge([
+        widget.profileService,
+        widget.connectionService,
+      ]),
       builder: (context, _) {
         final allProfiles = widget.profileService.profiles;
         final filteredProfiles = _searchQuery.isEmpty
@@ -266,6 +269,7 @@ class _ProfilesScreenState extends State<ProfilesScreen> {
                             isSelected: isSelected,
                             onSelect: () {
                               widget.connectionService.setActiveProfile(profile);
+                              setState(() {});
                             },
                             onEdit: () => _navigateToEdit(profile),
                             onDelete: () {
